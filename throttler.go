@@ -8,6 +8,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -24,6 +25,9 @@ var defaultKSMRoot = "/sys/kernel/mm/ksm/"
 var errKSMUnavailable = errors.New("KSM is unavailable")
 var errKSMMissing = errors.New("Missing KSM instance")
 var memInfo = "/proc/meminfo"
+
+// Version is the proxy version. This variable is populated at build time.
+var Version = "unknown"
 
 const (
 	ksmRunFile        = "run"
@@ -98,7 +102,7 @@ type ksmThrottler struct {
 
 // Kick is the KSM Throttler gRPC Kick function implementation
 func (t *ksmThrottler) Kick(context.Context, *gpb.Empty) (*gpb.Empty, error) {
-	logrus.Debug("Kick received")
+	throttlerLog.Debug("Kick received")
 
 	if t.k == nil {
 		return nil, errKSMMissing
@@ -128,6 +132,22 @@ func (t *ksmThrottler) listen() (*net.UnixListener, error) {
 }
 
 func main() {
+	doVersion := flag.Bool("version", false, "display the version")
+	logLevel := flag.String("log", "warn",
+		"log messages above specified level; one of debug, warn, error, fatal or panic")
+	uri := flag.String("uri", defaultgRPCSocket, "KSM throttler gRPC URI")
+
+	flag.Parse()
+
+	if err := SetLoggingLevel(*logLevel); err != nil {
+		fmt.Printf("Could not set logging level %s: %v", logLevel, err)
+	}
+
+	if *doVersion {
+		fmt.Println("Version:", Version)
+		os.Exit(0)
+	}
+
 	ksm, err := startKSM(defaultKSMRoot, defaultKSMMode)
 	if err != nil {
 		// KSM failure should not be fatal
@@ -136,21 +156,21 @@ func main() {
 
 	throttler := &ksmThrottler{
 		k:   ksm,
-		uri: defaultgRPCSocket,
+		uri: *uri,
 	}
 
-	logrus.Debugf("Starting KSM throttling service at %s", throttler.uri)
+	throttlerLog.Debugf("Starting KSM throttling service at %s", throttler.uri)
 
 	listen, err := throttler.listen()
 	if err != nil {
-		logrus.Errorf("Could not listen on gRPC service %v", err)
+		throttlerLog.Errorf("Could not listen on gRPC service %v", err)
 	}
 
 	server := grpc.NewServer()
 	kpb.RegisterKSMThrottlerServer(server, throttler)
 
 	if err := server.Serve(listen); err != nil {
-		logrus.Errorf("gRPC serve error %v\n", err)
+		throttlerLog.Errorf("gRPC serve error %v\n", err)
 		return
 	}
 
