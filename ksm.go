@@ -366,6 +366,26 @@ func (k *ksm) tune(s ksmSetting) error {
 	return nil
 }
 
+// kick gets us back to the aggressive setting
+func (k *ksm) kick() {
+	k.Lock()
+
+	if !k.initialized {
+		throttlerLog.Error(errors.New("KSM is unavailable"))
+		k.Unlock()
+		return
+	}
+
+	// If we're not throttling, we must not kick.
+	if !k.throttling {
+		k.Unlock()
+		return
+	}
+
+	k.Unlock()
+	k.kickChannel <- true
+}
+
 func startKSM(root string, mode ksmMode) (*ksm, error) {
 	k, err := newKSM(root)
 	if err != nil {
