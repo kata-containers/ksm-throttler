@@ -1,5 +1,9 @@
-PREFIX := /usr
-BIN_DIR := $(PREFIX)/bin
+PACKAGE  = github.com/kata-containers/ksm-throttler
+BASE     = $(GOPATH)/src/$(PACKAGE)
+PREFIX   = /usr
+BIN_DIR  = $(PREFIX)/bin
+GO       = go
+PKGS     = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
 
 #
 # Pretty printing
@@ -16,7 +20,7 @@ QUIET_GOBUILD = $(Q:@=@echo    '     GOBUILD  '$@;)
 all: build binaries
 
 build:
-	$(QUIET_GOBUILD)go build $(go list ./... | grep -v /vendor/)
+	$(QUIET_GOBUILD)go build $(PKGS)
 
 throttler:
 	$(QUIET_GOBUILD)go build -o ksm-throttler throttler.go ksm.go
