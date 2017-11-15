@@ -2,15 +2,32 @@
 
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/timestamp"]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
   version = "v1.0.3"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
 
 [[projects]]
   branch = "master"
@@ -50,6 +67,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "49b27213a516b10605c590287760ad4c8a3d11cb8c74712b29ad62c9c46c14e9"
+  inputs-digest = "70eb5ddf265c2c731ebc510e8966df39990eec2a0ed062134d10fb0d84d72c26"
   solver-name = "gps-cdcl"
   solver-version = 1

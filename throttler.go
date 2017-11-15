@@ -76,6 +76,21 @@ var throttlerLog = logrus.WithFields(logrus.Fields{
 	"pid":    os.Getpid(),
 })
 
+// SetLoggingLevel sets the logging level for the whole application. The values
+// accepted are: "debug", "info", "warn" (or "warning"), "error", "fatal" and
+// "panic".
+func SetLoggingLevel(l string) error {
+	levelStr := l
+
+	level, err := logrus.ParseLevel(levelStr)
+	if err != nil {
+		return err
+	}
+
+	logrus.SetLevel(level)
+	return nil
+}
+
 type ksmThrottler struct {
 	k *ksm
 }
