@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package ksm;
+
+import "google/protobuf/empty.proto";
+
+// To generate ksm.pb.go, run:
+// $ go get -u github.com/google/protobuf
+// $ protoc -I=$GOPATH/src/github.com/google/protobuf/src/ -I. --go_out=plugins=grpc:. ksm.proto
+
+// unstable
+service KSMThrottler {
+	rpc Kick(google.protobuf.Empty) returns (google.protobuf.Empty);
+}
