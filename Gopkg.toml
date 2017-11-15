@@ -1,0 +1,15 @@
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.0.3"
+
+[[constraint]]
+  name = "golang.org/x/net"
+  revision = "a337091b0525af65de94df2eb7e98bd9962dcbe2"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.7.3"
