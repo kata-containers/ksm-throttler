@@ -92,11 +92,14 @@ func SetLoggingLevel(l string) error {
 }
 
 type ksmThrottler struct {
-	k *ksm
+	k   *ksm
+	uri string
 }
 
 // Kick is the KSM Throttler gRPC Kick function implementation
 func (t *ksmThrottler) Kick(context.Context, *gpb.Empty) (*gpb.Empty, error) {
+	logrus.Debug("Kick received")
+
 	if t.k == nil {
 		return nil, errKSMMissing
 	}
@@ -106,28 +109,50 @@ func (t *ksmThrottler) Kick(context.Context, *gpb.Empty) (*gpb.Empty, error) {
 	return nil, nil
 }
 
+func (t *ksmThrottler) listen() (*net.UnixListener, error) {
+	if err := os.Remove(t.uri); err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("Couldn't remove exiting socket %v", err)
+	}
+
+	listen, err := net.ListenUnix("unix", &net.UnixAddr{Name: t.uri, Net: "unix"})
+	if err != nil {
+		return nil, fmt.Errorf("Listen error %v", err)
+
+	}
+
+	if err := os.Chmod(t.uri, 0660|os.ModeSocket); err != nil {
+		return nil, fmt.Errorf("Couldn't set mode on socket %v", err)
+	}
+
+	return listen, nil
+}
+
 func main() {
 	ksm, err := startKSM(defaultKSMRoot, defaultKSMMode)
 	if err != nil {
 		// KSM failure should not be fatal
-		fmt.Fprintln(os.Stderr, "init:", err.Error())
-	} else {
-		defer func() {
-			_ = ksm.restore()
-		}()
+		logrus.Errorf("Could not start KSM: %v", err)
 	}
 
 	throttler := &ksmThrottler{
-		k: ksm,
+		k:   ksm,
+		uri: defaultgRPCSocket,
 	}
 
-	listen, err := net.Listen("unix", defaultgRPCSocket)
+	logrus.Debugf("Starting KSM throttling service at %s", throttler.uri)
+
+	listen, err := throttler.listen()
 	if err != nil {
-		return
+		logrus.Errorf("Could not listen on gRPC service %v", err)
 	}
 
 	server := grpc.NewServer()
 	kpb.RegisterKSMThrottlerServer(server, throttler)
-	server.Serve(listen)
+
+	if err := server.Serve(listen); err != nil {
+		logrus.Errorf("gRPC serve error %v\n", err)
+		return
+	}
+
 	return
 }
