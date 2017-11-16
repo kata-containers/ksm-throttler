@@ -1,0 +1,10 @@
+[Unit]
+Description=KSM throttling daemon
+Documentation=https://github.com/kata-containers/ksm-throttler
+
+[Service]
+ExecStart=@libexecdir@/ksm-throttler/ksm-throttler -log debug
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
