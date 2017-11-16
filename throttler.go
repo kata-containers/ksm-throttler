@@ -29,6 +29,13 @@ var memInfo = "/proc/meminfo"
 // Version is the proxy version. This variable is populated at build time.
 var Version = "unknown"
 
+// DefaultURI is populated at link time with the value of:
+//   ${locatestatedir}/run/ksm-throttler/ksm.sock
+var DefaultURI string
+
+// ArgURI is populated at runtime from the option -uri
+var ArgURI = flag.String("uri", "", "KSM throttler gRPC URI")
+
 const (
 	ksmRunFile        = "run"
 	ksmPagesToScan    = "pages_to_scan"
@@ -36,7 +43,10 @@ const (
 	ksmStart          = "1"
 	ksmStop           = "0"
 	defaultKSMMode    = ksmAuto
-	defaultgRPCSocket = "/var/run/ksmthrottler.sock"
+	defaultgRPCSocket = "/var/run/ksm-throttler/ksm.sock"
+	// In linux the max socket path is 108 including null character
+	// see http://man7.org/linux/man-pages/man7/unix.7.html
+	socketPathMaxLength = 107
 )
 
 type ksmThrottleInterval struct {
@@ -131,13 +141,45 @@ func (t *ksmThrottler) listen() (*net.UnixListener, error) {
 	return listen, nil
 }
 
+// getSocketPath computes the path of the KSM throttler socket.
+// Note that when socket activated, the socket path is specified
+// in the systemd socket file but the same value is set in
+// DefaultURI at link time.
+func getSocketPath() (string, error) {
+	// Invoking "go build" without any linker option will not
+	// populate DefaultURI, so fallback to a reasonable
+	// path. People should really use the Makefile though.
+	if DefaultURI == "" {
+		DefaultURI = defaultgRPCSocket
+	}
+
+	socketURI := DefaultURI
+
+	if len(*ArgURI) != 0 {
+		socketURI = *ArgURI
+	}
+
+	if len(socketURI) > socketPathMaxLength {
+		return "", fmt.Errorf("socket path too long %d (max %d)",
+			len(socketURI), socketPathMaxLength)
+
+	}
+
+	return socketURI, nil
+}
+
 func main() {
 	doVersion := flag.Bool("version", false, "display the version")
 	logLevel := flag.String("log", "warn",
 		"log messages above specified level; one of debug, warn, error, fatal or panic")
-	uri := flag.String("uri", defaultgRPCSocket, "KSM throttler gRPC URI")
 
 	flag.Parse()
+
+	uri, err := getSocketPath()
+	if err != nil {
+		logrus.Errorf("Could net get service socket URI: %v", err)
+		return
+	}
 
 	if err := SetLoggingLevel(*logLevel); err != nil {
 		fmt.Printf("Could not set logging level %s: %v", *logLevel, err)
@@ -150,13 +192,13 @@ func main() {
 
 	ksm, err := startKSM(defaultKSMRoot, defaultKSMMode)
 	if err != nil {
-		// KSM failure should not be fatal
 		logrus.Errorf("Could not start KSM: %v", err)
+		return
 	}
 
 	throttler := &ksmThrottler{
 		k:   ksm,
-		uri: *uri,
+		uri: uri,
 	}
 
 	throttlerLog.Debugf("Starting KSM throttling service at %s", throttler.uri)
@@ -170,7 +212,7 @@ func main() {
 	kpb.RegisterKSMThrottlerServer(server, throttler)
 
 	if err := server.Serve(listen); err != nil {
-		throttlerLog.Errorf("gRPC serve error %v\n", err)
+		throttlerLog.Errorf("gRPC serve error %v", err)
 		return
 	}
 
