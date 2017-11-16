@@ -4,7 +4,7 @@ Documentation=https://github.com/kata-containers/ksm-throttler
 Requires=ksm-throttler.service
 
 [Service]
-ExecStart=@libexecdir@/ksm-throttler/input/virtcontainers/vc -log debug
+ExecStart=@libexecdir@/ksm-throttler/trigger/virtcontainers/vc -log debug
 Restart=always
 
 [Install]

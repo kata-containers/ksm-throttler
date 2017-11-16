@@ -8,7 +8,7 @@ LIBEXECDIR    = $(PREFIX)/libexec
 LOCALSTATEDIR = /var
 SOURCES       = $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
 KSM_SOCKET    = $(LOCALSTATEDIR)/run/ksm-throttler/ksm.sock
-INPUT_DIR     = $(GOPATH)/src/$(PACKAGE)/input
+TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
 
@@ -40,12 +40,12 @@ throttler:
 		"-X main.DefaultURI=$(KSM_SOCKET) -X main.Version=$(VERSION)" throttler.go ksm.go
 
 kicker:
-	$(QUIET_GOBUILD)go build -o $(INPUT_DIR)/kicker/$@ \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(INPUT_DIR)/kicker/*.go
+	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/kicker/*.go
 
 virtcontainers:
-	$(QUIET_GOBUILD)go build -o $(INPUT_DIR)/virtcontainers/vc \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(INPUT_DIR)/virtcontainers/*.go
+	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/virtcontainers/*.go
 
 binaries: throttler kicker virtcontainers
 
@@ -90,7 +90,7 @@ all-installable: ksm-throttler virtcontainers $(UNIT_FILES)
 
 install: all-installable
 	$(call INSTALL_EXEC,ksm-throttler,$(LIBEXECDIR)/ksm-throttler)
-	$(call INSTALL_EXEC,input/virtcontainers/vc,$(LIBEXECDIR)/ksm-throttler)
+	$(call INSTALL_EXEC,trigger/virtcontainers/vc,$(LIBEXECDIR)/ksm-throttler)
 	$(foreach f,$(UNIT_FILES),$(call INSTALL_FILE,$f,$(UNIT_DIR)))
 
 #
@@ -99,8 +99,8 @@ install: all-installable
 
 clean:
 	rm -f ksm-throttler
-	rm -f $(INPUT_DIR)/kicker/kicker
-	rm -f $(INPUT_DIR)/virtcontainers/vc
+	rm -f $(TRIGGER_DIR)/kicker/kicker
+	rm -f $(TRIGGER_DIR)/virtcontainers/vc
 
 $(GENERATED_FILES): %: %.in Makefile
 	@mkdir -p `dirname $@`
