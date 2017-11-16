@@ -32,6 +32,8 @@ script:
 - make
 - make check
 - export GOROOT=`go env GOROOT` && sudo -E PATH=$PATH:$GOROOT/bin $GOPATH/bin/test-cases -v -timeout 9 -short -coverprofile /tmp/cover.out $go_packages
+- go test -race -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
 - "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
+- bash <(curl -s https://codecov.io/bash)
