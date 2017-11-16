@@ -140,7 +140,7 @@ func main() {
 	flag.Parse()
 
 	if err := SetLoggingLevel(*logLevel); err != nil {
-		fmt.Printf("Could not set logging level %s: %v", logLevel, err)
+		fmt.Printf("Could not set logging level %s: %v", *logLevel, err)
 	}
 
 	if *doVersion {
