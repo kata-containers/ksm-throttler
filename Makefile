@@ -37,7 +37,10 @@ throttler:
 kicker:
 	$(QUIET_GOBUILD)go build -o $(INPUT_DIR)/kicker/$@ $(INPUT_DIR)/kicker/*.go
 
-binaries: throttler kicker
+virtcontainers:
+	$(QUIET_GOBUILD)go build -o $(INPUT_DIR)/virtcontainers/vc $(INPUT_DIR)/virtcontainers/*.go
+
+binaries: throttler kicker virtcontainers
 
 #
 # Tests
@@ -58,6 +61,7 @@ check-go-test:
 clean:
 	rm -f ksm-throttler
 	rm -f $(INPUT_DIR)/kicker/kicker
+	rm -f $(INPUT_DIR)/virtcontainers/vc
 
 .PHONY: \
 	all \

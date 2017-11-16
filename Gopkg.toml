@@ -17,3 +17,7 @@
 [[constraint]]
   name = "github.com/stretchr/testify"
   revision = "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsnotify"
+  revision = "4da3e2cfbabc9f751898f250b49f2439785783a1"

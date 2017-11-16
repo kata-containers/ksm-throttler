@@ -8,6 +8,11 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "4da3e2cfbabc9f751898f250b49f2439785783a1"
+
+[[projects]]
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/empty","ptypes/timestamp"]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
@@ -67,6 +72,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "70eb5ddf265c2c731ebc510e8966df39990eec2a0ed062134d10fb0d84d72c26"
+  inputs-digest = "1afe928a939a7b9529b3312bb47b97ee3fe43a02a7f3ed63b511e7fafaf35c8e"
   solver-name = "gps-cdcl"
   solver-version = 1
