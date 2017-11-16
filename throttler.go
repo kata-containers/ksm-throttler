@@ -110,7 +110,7 @@ func (t *ksmThrottler) Kick(context.Context, *gpb.Empty) (*gpb.Empty, error) {
 
 	t.k.kick()
 
-	return nil, nil
+	return &gpb.Empty{}, nil
 }
 
 func (t *ksmThrottler) listen() (*net.UnixListener, error) {
