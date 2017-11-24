@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"time"
 
 	gpb "github.com/golang/protobuf/ptypes/empty"
@@ -35,6 +36,8 @@ var DefaultURI string
 
 // ArgURI is populated at runtime from the option -uri
 var ArgURI = flag.String("uri", "", "KSM throttler gRPC URI")
+
+var socketDirectoryPerm = os.FileMode(0750)
 
 const (
 	ksmRunFile        = "run"
@@ -124,6 +127,11 @@ func (t *ksmThrottler) Kick(context.Context, *gpb.Empty) (*gpb.Empty, error) {
 }
 
 func (t *ksmThrottler) listen() (*net.UnixListener, error) {
+	uriDir := filepath.Dir(t.uri)
+	if err := os.MkdirAll(uriDir, socketDirectoryPerm); err != nil {
+		return nil, fmt.Errorf("Couldn't create socket directory %v", err)
+	}
+
 	if err := os.Remove(t.uri); err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("Couldn't remove exiting socket %v", err)
 	}

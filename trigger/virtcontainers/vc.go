@@ -9,11 +9,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"sync"
-
 	"github.com/fsnotify/fsnotify"
 	"github.com/kata-containers/ksm-throttler/pkg/client"
 	"github.com/sirupsen/logrus"
+	"os"
+	"path"
+	"path/filepath"
+	"sync"
 )
 
 // DefaultURI is populated at link time with the value of:
@@ -57,6 +59,57 @@ func getSocketPath() (string, error) {
 	return socketURI, nil
 }
 
+func waitForDirectory(dir string) error {
+	if dir == "" || !path.IsAbs(dir) {
+		return fmt.Errorf("Can not wait for empty or relative directory")
+	}
+
+	syncCh := make(chan error)
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		logrus.Errorf("could not create new watcher %v", err)
+		return err
+	}
+	defer watcher.Close()
+
+	logrus.Debugf("Waiting for %s", dir)
+
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				logrus.Debugf("Directory monitoring event %v", event)
+				if event.Op&fsnotify.Create != fsnotify.Create ||
+					event.Name != dir {
+					continue
+				}
+
+				syncCh <- nil
+				return
+
+			case err := <-watcher.Errors:
+				logrus.Errorf("Directory monitoring error %v", err)
+				syncCh <- err
+				return
+			}
+		}
+	}()
+
+	if err := watcher.Add(filepath.Dir(dir)); err != nil {
+		logrus.Errorf("Could not monitor directory %s: %v", dir, err)
+		return err
+	}
+
+	select {
+	case syncErr := <-syncCh:
+		if syncErr == nil {
+			logrus.Debugf("%s created", dir)
+		}
+		return err
+	}
+}
+
 func monitorPods(vcRunRoot, throttler string) error {
 	var wg sync.WaitGroup
 
@@ -67,10 +120,32 @@ func monitorPods(vcRunRoot, throttler string) error {
 	}
 	defer watcher.Close()
 
+	// Wait for vc root if it does not exist
+	if _, err := os.Stat(vcRunRoot); os.IsNotExist(err) {
+		if err := waitForDirectory(vcRunRoot); err != nil {
+			logrus.Errorf("Could not monitor virtcontainers base directory %s: %v", vcRunRoot, err)
+			return err
+		}
+	}
+
+	// Wait for the pods path if it does not exist
+	podsPath := filepath.Join(vcRunRoot, "pods")
+	if _, err := os.Stat(podsPath); os.IsNotExist(err) {
+		if err := waitForDirectory(podsPath); err != nil {
+			logrus.Errorf("Could not monitor virtcontainers pods %s: %v", podsPath, err)
+			return err
+		}
+
+		// First pod created, we should kick the throttler
+		if err := client.Kick(throttler); err != nil {
+			logrus.Errorf("Could not kick the throttler %v", err)
+			return err
+		}
+	}
+
 	wg.Add(1)
 
-	logrus.Debugf("Monitoring virtcontainers event at %s", vcRunRoot)
-
+	logrus.Debugf("Monitoring virtcontainers events at %s", podsPath)
 	go func() {
 		for {
 			select {
@@ -94,7 +169,7 @@ func monitorPods(vcRunRoot, throttler string) error {
 		}
 	}()
 
-	if err = watcher.Add(vcRunRoot); err != nil {
+	if err := watcher.Add(podsPath); err != nil {
 		logrus.Errorf("Could not monitor virtcontainers root %s: %v", vcRunRoot, err)
 		return err
 	}
@@ -117,7 +192,7 @@ func setLoggingLevel(l string) error {
 }
 
 func main() {
-	vcRoot := flag.String("root", "/var/run/virtcontainers/pods", "Virtcontainers root directory")
+	vcRoot := flag.String("root", "/var/run/virtcontainers", "Virtcontainers root directory")
 	logLevel := flag.String("log", "warn",
 		"log messages above specified level; one of debug, warn, error, fatal or panic")
 	flag.Parse()
