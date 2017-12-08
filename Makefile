@@ -1,3 +1,4 @@
+TARGET        = ksm-throttler
 PACKAGE       = github.com/kata-containers/ksm-throttler
 BASE          = $(GOPATH)/src/$(PACKAGE)
 PREFIX        = /usr
@@ -5,7 +6,7 @@ BIN_DIR       = $(PREFIX)/bin
 LIBEXECDIR    = $(PREFIX)/libexec
 LOCALSTATEDIR = /var
 SOURCES       = $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
-KSM_SOCKET    = $(LOCALSTATEDIR)/run/ksm-throttler/ksm.sock
+KSM_SOCKET    = $(LOCALSTATEDIR)/run/$(TARGET)/ksm.sock
 TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
@@ -33,8 +34,8 @@ all: build binaries
 build:
 	$(QUIET_GOBUILD)go build $(PKGS)
 
-throttler:
-	$(QUIET_GOBUILD)go build -o ksm-throttler -ldflags \
+$(TARGET):
+	$(QUIET_GOBUILD)go build -o $@ -ldflags \
 		"-X main.DefaultURI=$(KSM_SOCKET) -X main.version=$(VERSION_COMMIT)" throttler.go ksm.go
 
 kicker:
@@ -45,7 +46,7 @@ virtcontainers:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
 		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/virtcontainers/*.go
 
-binaries: throttler kicker virtcontainers
+binaries: $(TARGET) kicker virtcontainers
 
 #
 # systemd files
@@ -55,7 +56,7 @@ HAVE_SYSTEMD := $(shell pkg-config --exists systemd 2>/dev/null && echo 'yes')
 
 ifeq ($(HAVE_SYSTEMD),yes)
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-UNIT_FILES = ksm-throttler.service vc-throttler.service
+UNIT_FILES = $(TARGET).service vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
 endif
 
@@ -84,11 +85,11 @@ define INSTALL_FILE
 
 endef
 
-all-installable: ksm-throttler virtcontainers $(UNIT_FILES)
+all-installable: $(TARGET) virtcontainers $(UNIT_FILES)
 
 install: all-installable
-	$(call INSTALL_EXEC,ksm-throttler,$(LIBEXECDIR)/ksm-throttler)
-	$(call INSTALL_EXEC,trigger/virtcontainers/vc,$(LIBEXECDIR)/ksm-throttler)
+	$(call INSTALL_EXEC,$(TARGET),$(LIBEXECDIR)/$(TARGET))
+	$(call INSTALL_EXEC,trigger/virtcontainers/vc,$(LIBEXECDIR)/$(TARGET))
 	$(foreach f,$(UNIT_FILES),$(call INSTALL_FILE,$f,$(UNIT_DIR)))
 
 #
@@ -96,7 +97,7 @@ install: all-installable
 #
 
 clean:
-	rm -f ksm-throttler
+	rm -f $(TARGET)
 	rm -f $(TRIGGER_DIR)/kicker/kicker
 	rm -f $(TRIGGER_DIR)/virtcontainers/vc
 
