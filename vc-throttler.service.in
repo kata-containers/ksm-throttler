@@ -1,10 +1,10 @@
 [Unit]
 Description=Virtcontainers based KSM throttling
-Documentation=https://github.com/kata-containers/ksm-throttler
+Documentation=https://@PACKAGE_URL@
 Requires=ksm-throttler.service
 
 [Service]
-ExecStart=@libexecdir@/ksm-throttler/trigger/virtcontainers/vc -log debug
+ExecStart=@libexecdir@/@PACKAGE_NAME@/trigger/virtcontainers/vc -log debug
 Restart=always
 
 [Install]

@@ -1,13 +1,14 @@
 TARGET        = ksm-throttler
-PACKAGE       = github.com/kata-containers/ksm-throttler
-BASE          = $(GOPATH)/src/$(PACKAGE)
+PACKAGE_URL   = github.com/kata-containers/ksm-throttler
+PACKAGE_NAME  = $(TARGET)
+BASE          = $(GOPATH)/src/$(PACKAGE_URL)
 PREFIX        = /usr
 BIN_DIR       = $(PREFIX)/bin
 LIBEXECDIR    = $(PREFIX)/libexec
 LOCALSTATEDIR = /var
 SOURCES       = $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
 KSM_SOCKET    = $(LOCALSTATEDIR)/run/$(TARGET)/ksm.sock
-TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE)/trigger
+TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE_URL)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
 
@@ -107,6 +108,9 @@ $(GENERATED_FILES): %: %.in Makefile
 		-e 's|[@]bindir[@]|$(BINDIR)|g' \
 		-e 's|[@]libexecdir[@]|$(LIBEXECDIR)|' \
 		-e "s|[@]localstatedir[@]|$(LOCALSTATEDIR)|" \
+		-e "s|[@]TARGET[@]|$(TARGET)|" \
+		-e "s|[@]PACKAGE_NAME[@]|$(PACKAGE_NAME)|" \
+		-e "s|[@]PACKAGE_URL[@]|$(PACKAGE_URL)|" \
 		"$<" > "$@"
 
 .PHONY: \
