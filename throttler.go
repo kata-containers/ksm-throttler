@@ -108,6 +108,9 @@ func SetLoggingLevel(l string) error {
 	}
 
 	logrus.SetLevel(level)
+
+	throttlerLog.WithField("version", version).Info()
+
 	return nil
 }
 
