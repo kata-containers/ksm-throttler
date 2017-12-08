@@ -1,5 +1,3 @@
-VERSION := 0.1+
-
 PACKAGE       = github.com/kata-containers/ksm-throttler
 BASE          = $(GOPATH)/src/$(PACKAGE)
 PREFIX        = /usr
@@ -12,11 +10,11 @@ TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
 
-DESCRIBE := $(shell git describe 2> /dev/null || true)
-DESCRIBE_DIRTY := $(if $(shell git status --porcelain --untracked-files=no 2> /dev/null),${DESCRIBE}-dirty,${DESCRIBE})
-ifneq ($(DESCRIBE_DIRTY),)
-VERSION := $(DESCRIBE_DIRTY)
-endif
+VERSION_FILE := ./VERSION
+VERSION := $(shell grep -v ^\# $(VERSION_FILE))
+COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
+COMMIT := $(if $(shell git status --porcelain --untracked-files=no),${COMMIT_NO}-dirty,${COMMIT_NO})
+VERSION_COMMIT := $(if $(COMMIT),$(VERSION)-$(COMMIT),$(VERSION))
 
 #
 # Pretty printing
@@ -37,7 +35,7 @@ build:
 
 throttler:
 	$(QUIET_GOBUILD)go build -o ksm-throttler -ldflags \
-		"-X main.DefaultURI=$(KSM_SOCKET) -X main.Version=$(VERSION)" throttler.go ksm.go
+		"-X main.DefaultURI=$(KSM_SOCKET) -X main.Version=$(VERSION_COMMIT)" throttler.go ksm.go
 
 kicker:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
