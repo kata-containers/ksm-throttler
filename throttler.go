@@ -200,7 +200,7 @@ func main() {
 	}
 
 	if *doVersion {
-		fmt.Println("Version:", version)
+		fmt.Printf("%v version %v\n", name, version)
 		os.Exit(0)
 	}
 
