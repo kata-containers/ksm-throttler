@@ -27,8 +27,8 @@ var errKSMUnavailable = errors.New("KSM is unavailable")
 var errKSMMissing = errors.New("Missing KSM instance")
 var memInfo = "/proc/meminfo"
 
-// Version is the proxy version. This variable is populated at build time.
-var Version = "unknown"
+// version is the KSM throttler version. This variable is populated at build time.
+var version = "unknown"
 
 // DefaultURI is populated at link time with the value of:
 //   ${locatestatedir}/run/ksm-throttler/ksm.sock
@@ -194,7 +194,7 @@ func main() {
 	}
 
 	if *doVersion {
-		fmt.Println("Version:", Version)
+		fmt.Println("Version:", version)
 		os.Exit(0)
 	}
 

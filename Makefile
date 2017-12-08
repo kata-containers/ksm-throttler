@@ -35,7 +35,7 @@ build:
 
 throttler:
 	$(QUIET_GOBUILD)go build -o ksm-throttler -ldflags \
-		"-X main.DefaultURI=$(KSM_SOCKET) -X main.Version=$(VERSION_COMMIT)" throttler.go ksm.go
+		"-X main.DefaultURI=$(KSM_SOCKET) -X main.version=$(VERSION_COMMIT)" throttler.go ksm.go
 
 kicker:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
