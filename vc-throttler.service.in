@@ -1,7 +1,7 @@
 [Unit]
 Description=Virtcontainers based KSM throttling
 Documentation=https://@PACKAGE_URL@
-Requires=ksm-throttler.service
+Requires=@SERVICE_FILE@
 
 [Service]
 ExecStart=@libexecdir@/@PACKAGE_NAME@/trigger/virtcontainers/vc -log debug

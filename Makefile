@@ -58,6 +58,15 @@ binaries: $(TARGET) kicker virtcontainers
 HAVE_SYSTEMD := $(shell pkg-config --exists systemd 2>/dev/null && echo 'yes')
 
 ifeq ($(HAVE_SYSTEMD),yes)
+
+DEFAULT_SERVICE_FILE := ksm-throttler.service
+DEFAULT_SERVICE_FILE_IN := $(DEFAULT_SERVICE_FILE).in
+SERVICE_FILE := $(TARGET).service
+SERVICE_FILE_IN := $(SERVICE_FILE).in
+
+$(SERVICE_FILE_IN): $(DEFAULT_SERVICE_FILE_IN)
+	$(QUIET_GEN)cp $< $@
+
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 UNIT_FILES = $(TARGET).service vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
@@ -113,6 +122,7 @@ $(GENERATED_FILES): %: %.in Makefile
 		-e "s|[@]TARGET[@]|$(TARGET)|" \
 		-e "s|[@]PACKAGE_NAME[@]|$(PACKAGE_NAME)|" \
 		-e "s|[@]PACKAGE_URL[@]|$(PACKAGE_URL)|" \
+		-e "s|[@]SERVICE_FILE[@]|$(SERVICE_FILE)|" \
 		"$<" > "$@"
 
 .PHONY: \
