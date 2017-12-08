@@ -22,6 +22,9 @@ import (
 	"google.golang.org/grpc"
 )
 
+// name describes the program ans is set at build time
+var name string
+
 var defaultKSMRoot = "/sys/kernel/mm/ksm/"
 var errKSMUnavailable = errors.New("KSM is unavailable")
 var errKSMMissing = errors.New("Missing KSM instance")
@@ -89,7 +92,7 @@ var ksmThrottleIntervals = map[ksmMode]ksmThrottleInterval{
 // throttlerLog is the general logger the KSM throttler.
 var throttlerLog = logrus.WithFields(logrus.Fields{
 	"source": "throttler",
-	"name":   "KSM throttler",
+	"name":   name,
 	"pid":    os.Getpid(),
 })
 
