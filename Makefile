@@ -24,7 +24,9 @@ VERSION_COMMIT := $(if $(COMMIT),$(VERSION)-$(COMMIT),$(VERSION))
 
 V	      = @
 Q	      = $(V:1=)
+QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_GOBUILD = $(Q:@=@echo    '     GOBUILD  '$@;)
+QUIET_INST    = $(Q:@=@echo    '     INSTALL  '$@;)
 
 #
 # Build
