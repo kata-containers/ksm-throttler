@@ -1,22 +1,22 @@
-VERSION := 0.1+
-
-PACKAGE       = github.com/kata-containers/ksm-throttler
-BASE          = $(GOPATH)/src/$(PACKAGE)
+TARGET        = ksm-throttler
+PACKAGE_URL   = github.com/kata-containers/ksm-throttler
+PACKAGE_NAME  = $(TARGET)
+BASE          = $(GOPATH)/src/$(PACKAGE_URL)
 PREFIX        = /usr
 BIN_DIR       = $(PREFIX)/bin
 LIBEXECDIR    = $(PREFIX)/libexec
 LOCALSTATEDIR = /var
 SOURCES       = $(shell find . 2>&1 | grep -E '.*\.(c|h|go)$$')
-KSM_SOCKET    = $(LOCALSTATEDIR)/run/ksm-throttler/ksm.sock
-TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE)/trigger
+KSM_SOCKET    = $(LOCALSTATEDIR)/run/$(TARGET)/ksm.sock
+TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE_URL)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
 
-DESCRIBE := $(shell git describe 2> /dev/null || true)
-DESCRIBE_DIRTY := $(if $(shell git status --porcelain --untracked-files=no 2> /dev/null),${DESCRIBE}-dirty,${DESCRIBE})
-ifneq ($(DESCRIBE_DIRTY),)
-VERSION := $(DESCRIBE_DIRTY)
-endif
+VERSION_FILE := ./VERSION
+VERSION := $(shell grep -v ^\# $(VERSION_FILE))
+COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
+COMMIT := $(if $(shell git status --porcelain --untracked-files=no),${COMMIT_NO}-dirty,${COMMIT_NO})
+VERSION_COMMIT := $(if $(COMMIT),$(VERSION)-$(COMMIT),$(VERSION))
 
 #
 # Pretty printing
@@ -24,7 +24,9 @@ endif
 
 V	      = @
 Q	      = $(V:1=)
+QUIET_GEN     = $(Q:@=@echo    '     GEN      '$@;)
 QUIET_GOBUILD = $(Q:@=@echo    '     GOBUILD  '$@;)
+QUIET_INST    = $(Q:@=@echo    '     INSTALL  '$@;)
 
 #
 # Build
@@ -35,9 +37,9 @@ all: build binaries
 build:
 	$(QUIET_GOBUILD)go build $(PKGS)
 
-throttler:
-	$(QUIET_GOBUILD)go build -o ksm-throttler -ldflags \
-		"-X main.DefaultURI=$(KSM_SOCKET) -X main.Version=$(VERSION)" throttler.go ksm.go
+$(TARGET):
+	$(QUIET_GOBUILD)go build -o $@ -ldflags \
+		"-X main.DefaultURI=$(KSM_SOCKET) -X main.name=$(TARGET) -X main.version=$(VERSION_COMMIT)" throttler.go ksm.go
 
 kicker:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
@@ -47,7 +49,7 @@ virtcontainers:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
 		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/virtcontainers/*.go
 
-binaries: throttler kicker virtcontainers
+binaries: $(TARGET) kicker virtcontainers
 
 #
 # systemd files
@@ -56,8 +58,17 @@ binaries: throttler kicker virtcontainers
 HAVE_SYSTEMD := $(shell pkg-config --exists systemd 2>/dev/null && echo 'yes')
 
 ifeq ($(HAVE_SYSTEMD),yes)
+
+DEFAULT_SERVICE_FILE := ksm-throttler.service
+DEFAULT_SERVICE_FILE_IN := $(DEFAULT_SERVICE_FILE).in
+SERVICE_FILE := $(TARGET).service
+SERVICE_FILE_IN := $(SERVICE_FILE).in
+
+$(SERVICE_FILE_IN): $(DEFAULT_SERVICE_FILE_IN)
+	$(QUIET_GEN)cp $< $@
+
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-UNIT_FILES = ksm-throttler.service vc-throttler.service
+UNIT_FILES = $(TARGET).service vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
 endif
 
@@ -86,11 +97,11 @@ define INSTALL_FILE
 
 endef
 
-all-installable: ksm-throttler virtcontainers $(UNIT_FILES)
+all-installable: $(TARGET) virtcontainers $(UNIT_FILES)
 
 install: all-installable
-	$(call INSTALL_EXEC,ksm-throttler,$(LIBEXECDIR)/ksm-throttler)
-	$(call INSTALL_EXEC,trigger/virtcontainers/vc,$(LIBEXECDIR)/ksm-throttler)
+	$(call INSTALL_EXEC,$(TARGET),$(LIBEXECDIR)/$(TARGET))
+	$(call INSTALL_EXEC,trigger/virtcontainers/vc,$(LIBEXECDIR)/$(TARGET))
 	$(foreach f,$(UNIT_FILES),$(call INSTALL_FILE,$f,$(UNIT_DIR)))
 
 #
@@ -98,7 +109,7 @@ install: all-installable
 #
 
 clean:
-	rm -f ksm-throttler
+	rm -f $(TARGET)
 	rm -f $(TRIGGER_DIR)/kicker/kicker
 	rm -f $(TRIGGER_DIR)/virtcontainers/vc
 
@@ -108,6 +119,10 @@ $(GENERATED_FILES): %: %.in Makefile
 		-e 's|[@]bindir[@]|$(BINDIR)|g' \
 		-e 's|[@]libexecdir[@]|$(LIBEXECDIR)|' \
 		-e "s|[@]localstatedir[@]|$(LOCALSTATEDIR)|" \
+		-e "s|[@]TARGET[@]|$(TARGET)|" \
+		-e "s|[@]PACKAGE_NAME[@]|$(PACKAGE_NAME)|" \
+		-e "s|[@]PACKAGE_URL[@]|$(PACKAGE_URL)|" \
+		-e "s|[@]SERVICE_FILE[@]|$(SERVICE_FILE)|" \
 		"$<" > "$@"
 
 .PHONY: \

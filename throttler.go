@@ -22,13 +22,16 @@ import (
 	"google.golang.org/grpc"
 )
 
+// name describes the program ans is set at build time
+var name string
+
 var defaultKSMRoot = "/sys/kernel/mm/ksm/"
 var errKSMUnavailable = errors.New("KSM is unavailable")
 var errKSMMissing = errors.New("Missing KSM instance")
 var memInfo = "/proc/meminfo"
 
-// Version is the proxy version. This variable is populated at build time.
-var Version = "unknown"
+// version is the KSM throttler version. This variable is populated at build time.
+var version = "unknown"
 
 // DefaultURI is populated at link time with the value of:
 //   ${locatestatedir}/run/ksm-throttler/ksm.sock
@@ -89,7 +92,7 @@ var ksmThrottleIntervals = map[ksmMode]ksmThrottleInterval{
 // throttlerLog is the general logger the KSM throttler.
 var throttlerLog = logrus.WithFields(logrus.Fields{
 	"source": "throttler",
-	"name":   "KSM throttler",
+	"name":   name,
 	"pid":    os.Getpid(),
 })
 
@@ -105,6 +108,9 @@ func SetLoggingLevel(l string) error {
 	}
 
 	logrus.SetLevel(level)
+
+	throttlerLog.WithField("version", version).Info()
+
 	return nil
 }
 
@@ -194,7 +200,7 @@ func main() {
 	}
 
 	if *doVersion {
-		fmt.Println("Version:", Version)
+		fmt.Printf("%v version %v\n", name, version)
 		os.Exit(0)
 	}
 

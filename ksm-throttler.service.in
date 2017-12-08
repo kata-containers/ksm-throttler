@@ -1,9 +1,9 @@
 [Unit]
 Description=KSM throttling daemon
-Documentation=https://github.com/kata-containers/ksm-throttler
+Documentation=https://@PACKAGE_URL@
 
 [Service]
-ExecStart=@libexecdir@/ksm-throttler/ksm-throttler -log debug
+ExecStart=@libexecdir@/@PACKAGE_NAME@/@TARGET@ -log debug
 Restart=always
 
 [Install]
