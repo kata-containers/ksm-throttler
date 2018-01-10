@@ -84,7 +84,7 @@ endif
 check: check-go-static check-go-test
 
 check-go-static:
-	bash .ci/go-lint.sh
+	bash .ci/static-checks.sh
 
 check-go-test:
 	bash .ci/go-test.sh
