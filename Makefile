@@ -1,3 +1,8 @@
+# Copyright (c) 2018 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
 TARGET        = ksm-throttler
 PACKAGE_URL   = github.com/kata-containers/ksm-throttler
 PACKAGE_NAME  = $(TARGET)
@@ -79,7 +84,7 @@ endif
 check: check-go-static check-go-test
 
 check-go-static:
-	bash .ci/go-lint.sh
+	bash .ci/static-checks.sh
 
 check-go-test:
 	bash .ci/go-test.sh
