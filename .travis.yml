@@ -9,20 +9,17 @@ go_import_path: github.com/kata-containers/ksm-throttler
 before_script:
   - ".ci/static-checks.sh"
 
-before_install:
-- go get github.com/ciao-project/ciao/test-cases
-
 install:
 - go_packages=$(go list ./... | grep -v vendor)
 - go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
 - go get -t -v $go_packages
 
+install:
+  - cd ${TRAVIS_BUILD_DIR} && make
+
 script:
-- go env
-- make
-- make check
-- export GOROOT=`go env GOROOT` && sudo -E PATH=$PATH:$GOROOT/bin $GOPATH/bin/test-cases -v -timeout 9 -short -coverprofile /tmp/cover.out $go_packages
-- go test -race -coverprofile=coverage.txt -covermode=atomic
+  - go env
+  - cd ${TRAVIS_BUILD_DIR} && make && make check
 
 after_success:
 - "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
