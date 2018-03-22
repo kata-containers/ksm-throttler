@@ -270,7 +270,7 @@ func (k *ksm) throttle() {
 	defer k.Unlock()
 
 	if !k.initialized {
-		throttlerLog.Error(errors.New("KSM is unavailable"))
+		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
 		return
 	}
 
@@ -287,7 +287,7 @@ func (k *ksm) throttle() {
 				// We will enter the aggressive setting until we throttle down.
 				_ = throttleTimer.Stop()
 				if err := k.tune(ksmSettings[ksmAggressive]); err != nil {
-					throttlerLog.Error(err)
+					throttlerLog.WithError(err).Error("kick failed to tune")
 					continue
 				}
 
@@ -306,7 +306,7 @@ func (k *ksm) throttle() {
 					if throttle.nextKnob == ksmInitial {
 						k.Lock()
 						if err := k.restoreSysFS(); err != nil {
-							throttlerLog.Error(err)
+							throttlerLog.WithError(err).Error("failed to restore sysfs")
 						}
 						k.Unlock()
 					}
@@ -316,7 +316,7 @@ func (k *ksm) throttle() {
 				nextKnob := ksmThrottleIntervals[k.currentKnob].nextKnob
 				interval := ksmThrottleIntervals[k.currentKnob].interval
 				if err := k.tune(ksmSettings[nextKnob]); err != nil {
-					throttlerLog.Error(err)
+					throttlerLog.WithError(err).Error("timer failed to tune")
 					continue
 				}
 
@@ -371,7 +371,7 @@ func (k *ksm) kick() {
 	k.Lock()
 
 	if !k.initialized {
-		throttlerLog.Error(errors.New("KSM is unavailable"))
+		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
 		k.Unlock()
 		return
 	}
