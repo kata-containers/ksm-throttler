@@ -409,7 +409,7 @@ func startKSM(root string, mode ksmMode) (*ksm, error) {
 		} else {
 			setting, ok := ksmSettings[mode]
 			if !ok {
-				return k, fmt.Errorf("Invalide KSM mode %v", mode)
+				return k, fmt.Errorf("Invalid KSM mode %v", mode)
 			}
 
 			if err := k.tune(setting); err != nil {
