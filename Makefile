@@ -48,11 +48,11 @@ $(TARGET):
 
 kicker:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/kicker/*.go
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/kicker/*.go)
 
 virtcontainers:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/virtcontainers/*.go
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/virtcontainers/*.go)
 
 binaries: $(TARGET) kicker virtcontainers
 
