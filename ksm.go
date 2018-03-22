@@ -19,6 +19,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ksmSetting struct {
@@ -286,8 +288,9 @@ func (k *ksm) throttle() {
 				// We got kicked, this means a new VM has been created.
 				// We will enter the aggressive setting until we throttle down.
 				_ = throttleTimer.Stop()
-				if err := k.tune(ksmSettings[ksmAggressive]); err != nil {
-					throttlerLog.WithError(err).Error("kick failed to tune")
+				mode := ksmAggressive
+				if err := k.tune(ksmSettings[mode]); err != nil {
+					throttlerLog.WithError(err).WithField("ksm-mode", mode).Error("kick failed to tune")
 					continue
 				}
 
@@ -313,10 +316,14 @@ func (k *ksm) throttle() {
 					continue
 				}
 
-				nextKnob := ksmThrottleIntervals[k.currentKnob].nextKnob
-				interval := ksmThrottleIntervals[k.currentKnob].interval
+				currentKnob := k.currentKnob
+				nextKnob := ksmThrottleIntervals[currentKnob].nextKnob
+				interval := ksmThrottleIntervals[currentKnob].interval
 				if err := k.tune(ksmSettings[nextKnob]); err != nil {
-					throttlerLog.WithError(err).Error("timer failed to tune")
+					throttlerLog.WithError(err).WithFields(logrus.Fields{
+						"current-ksm-mode": currentKnob,
+						"next-ksm-mode":    nextKnob,
+					}).Error("timer failed to tune")
 					continue
 				}
 
