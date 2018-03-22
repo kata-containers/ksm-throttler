@@ -69,9 +69,6 @@ DEFAULT_SERVICE_FILE_IN := $(DEFAULT_SERVICE_FILE).in
 SERVICE_FILE := $(TARGET).service
 SERVICE_FILE_IN := $(SERVICE_FILE).in
 
-$(SERVICE_FILE_IN): $(DEFAULT_SERVICE_FILE_IN)
-	$(QUIET_GEN)cp $< $@
-
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
 UNIT_FILES = $(TARGET).service vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
