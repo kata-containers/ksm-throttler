@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -139,7 +140,7 @@ func (attr *sysfsAttribute) close() error {
 }
 
 func (attr *sysfsAttribute) read() (string, error) {
-	_, err := attr.file.Seek(0, os.SEEK_SET)
+	_, err := attr.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +154,7 @@ func (attr *sysfsAttribute) read() (string, error) {
 }
 
 func (attr *sysfsAttribute) write(value string) error {
-	_, err := attr.file.Seek(0, os.SEEK_SET)
+	_, err := attr.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
