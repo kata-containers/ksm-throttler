@@ -351,30 +351,6 @@ func TestKSMTune(t *testing.T) {
 	}
 }
 
-func TestKSMModeSet(t *testing.T) {
-	var k ksmMode
-	var err error
-
-	err = k.Set(string(ksmOff))
-	assert.Nil(t, err)
-	assert.Equal(t, k, ksmOff)
-
-	err = k.Set(string(ksmAuto))
-	assert.Nil(t, err)
-	assert.Equal(t, k, ksmAuto)
-
-	err = k.Set(string(ksmInitial))
-	assert.Nil(t, err)
-	assert.Equal(t, k, ksmInitial)
-
-	err = k.Set(string(ksmStandard))
-	assert.NotNil(t, err)
-
-	err = k.Set(fmt.Sprintf("%s,%s", ksmAuto, ksmOff))
-	assert.Nil(t, err)
-	assert.Equal(t, k, ksmAuto)
-}
-
 func TestKSMModeString(t *testing.T) {
 	var k ksmMode
 	var s string

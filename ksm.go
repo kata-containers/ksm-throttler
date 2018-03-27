@@ -121,25 +121,6 @@ func (k ksmMode) String() string {
 	return ""
 }
 
-func (k *ksmMode) Set(value string) error {
-	for _, r := range strings.Split(value, ",") {
-		if r == "off" {
-			*k = ksmOff
-			return nil
-		} else if r == "initial" {
-			*k = ksmInitial
-			return nil
-		} else if r == "auto" {
-			*k = ksmAuto
-			return nil
-		}
-
-		return fmt.Errorf("Unsupported KSM knob %v", r)
-	}
-
-	return nil
-}
-
 type sysfsAttribute struct {
 	path string
 	file *os.File
