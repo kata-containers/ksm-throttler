@@ -24,9 +24,6 @@ import (
 )
 
 type ksmSetting struct {
-	// run describes if we want KSM to be on or off.
-	run bool
-
 	// pagesPerScanFactor describes how many pages we want
 	// to scan per KSM run.
 	// ksmd will san N pages, where N*pagesPerScanFactor is
@@ -35,6 +32,9 @@ type ksmSetting struct {
 
 	// scanIntervalMS is the KSM scan interval in milliseconds.
 	scanIntervalMS uint32
+
+	// run describes if we want KSM to be on or off.
+	run bool
 }
 
 func anonPages() (int64, error) {
@@ -102,10 +102,10 @@ const (
 )
 
 var ksmSettings = map[ksmMode]ksmSetting{
-	ksmOff:        {false, 1000, 500}, // Turn KSM off
-	ksmSlow:       {true, 500, 100},   // Every 100ms, we scan 1 page for every 500 pages available in the system
-	ksmStandard:   {true, 100, 10},    // Every 10ms, we scan 1 page for every 100 pages available in the system
-	ksmAggressive: {true, 10, 1},      // Every ms, we scan 1 page for every 10 pages available in the system
+	ksmOff:        {1000, 500, false}, // Turn KSM off
+	ksmSlow:       {500, 100, true},   // Every 100ms, we scan 1 page for every 500 pages available in the system
+	ksmStandard:   {100, 10, true},    // Every 10ms, we scan 1 page for every 100 pages available in the system
+	ksmAggressive: {10, 1, true},      // Every ms, we scan 1 page for every 10 pages available in the system
 }
 
 func (k ksmMode) String() string {
@@ -188,19 +188,21 @@ func (attr *sysfsAttribute) write(value string) error {
 }
 
 type ksm struct {
-	root          string
 	run           sysfsAttribute
 	pagesToScan   sysfsAttribute
 	sleepInterval sysfsAttribute
-	initialized   bool
 
+	root                 string
 	initialPagesToScan   string
 	initialSleepInterval string
 	initialKSMRun        string
 
 	currentKnob ksmMode
-	throttling  bool
+
 	kickChannel chan bool
+
+	throttling  bool
+	initialized bool
 
 	sync.Mutex
 }
