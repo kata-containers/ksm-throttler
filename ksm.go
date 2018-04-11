@@ -19,6 +19,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ksmSetting struct {
@@ -270,7 +272,7 @@ func (k *ksm) throttle() {
 	defer k.Unlock()
 
 	if !k.initialized {
-		throttlerLog.Error(errors.New("KSM is unavailable"))
+		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
 		return
 	}
 
@@ -286,8 +288,9 @@ func (k *ksm) throttle() {
 				// We got kicked, this means a new VM has been created.
 				// We will enter the aggressive setting until we throttle down.
 				_ = throttleTimer.Stop()
-				if err := k.tune(ksmSettings[ksmAggressive]); err != nil {
-					throttlerLog.Error(err)
+				mode := ksmAggressive
+				if err := k.tune(ksmSettings[mode]); err != nil {
+					throttlerLog.WithError(err).WithField("ksm-mode", mode).Error("kick failed to tune")
 					continue
 				}
 
@@ -306,17 +309,21 @@ func (k *ksm) throttle() {
 					if throttle.nextKnob == ksmInitial {
 						k.Lock()
 						if err := k.restoreSysFS(); err != nil {
-							throttlerLog.Error(err)
+							throttlerLog.WithError(err).Error("failed to restore sysfs")
 						}
 						k.Unlock()
 					}
 					continue
 				}
 
-				nextKnob := ksmThrottleIntervals[k.currentKnob].nextKnob
-				interval := ksmThrottleIntervals[k.currentKnob].interval
+				currentKnob := k.currentKnob
+				nextKnob := ksmThrottleIntervals[currentKnob].nextKnob
+				interval := ksmThrottleIntervals[currentKnob].interval
 				if err := k.tune(ksmSettings[nextKnob]); err != nil {
-					throttlerLog.Error(err)
+					throttlerLog.WithError(err).WithFields(logrus.Fields{
+						"current-ksm-mode": currentKnob,
+						"next-ksm-mode":    nextKnob,
+					}).Error("timer failed to tune")
 					continue
 				}
 
@@ -371,7 +378,7 @@ func (k *ksm) kick() {
 	k.Lock()
 
 	if !k.initialized {
-		throttlerLog.Error(errors.New("KSM is unavailable"))
+		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
 		k.Unlock()
 		return
 	}
@@ -409,7 +416,7 @@ func startKSM(root string, mode ksmMode) (*ksm, error) {
 		} else {
 			setting, ok := ksmSettings[mode]
 			if !ok {
-				return k, fmt.Errorf("Invalide KSM mode %v", mode)
+				return k, fmt.Errorf("Invalid KSM mode %v", mode)
 			}
 
 			if err := k.tune(setting); err != nil {
