@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -24,9 +25,6 @@ import (
 )
 
 type ksmSetting struct {
-	// run describes if we want KSM to be on or off.
-	run bool
-
 	// pagesPerScanFactor describes how many pages we want
 	// to scan per KSM run.
 	// ksmd will san N pages, where N*pagesPerScanFactor is
@@ -35,6 +33,9 @@ type ksmSetting struct {
 
 	// scanIntervalMS is the KSM scan interval in milliseconds.
 	scanIntervalMS uint32
+
+	// run describes if we want KSM to be on or off.
+	run bool
 }
 
 func anonPages() (int64, error) {
@@ -102,10 +103,10 @@ const (
 )
 
 var ksmSettings = map[ksmMode]ksmSetting{
-	ksmOff:        {false, 1000, 500}, // Turn KSM off
-	ksmSlow:       {true, 500, 100},   // Every 100ms, we scan 1 page for every 500 pages available in the system
-	ksmStandard:   {true, 100, 10},    // Every 10ms, we scan 1 page for every 100 pages available in the system
-	ksmAggressive: {true, 10, 1},      // Every ms, we scan 1 page for every 10 pages available in the system
+	ksmOff:        {1000, 500, false}, // Turn KSM off
+	ksmSlow:       {500, 100, true},   // Every 100ms, we scan 1 page for every 500 pages available in the system
+	ksmStandard:   {100, 10, true},    // Every 10ms, we scan 1 page for every 100 pages available in the system
+	ksmAggressive: {10, 1, true},      // Every ms, we scan 1 page for every 10 pages available in the system
 }
 
 func (k ksmMode) String() string {
@@ -119,25 +120,6 @@ func (k ksmMode) String() string {
 	}
 
 	return ""
-}
-
-func (k *ksmMode) Set(value string) error {
-	for _, r := range strings.Split(value, ",") {
-		if r == "off" {
-			*k = ksmOff
-			return nil
-		} else if r == "initial" {
-			*k = ksmInitial
-			return nil
-		} else if r == "auto" {
-			*k = ksmAuto
-			return nil
-		}
-
-		return fmt.Errorf("Unsupported KSM knob %v", r)
-	}
-
-	return nil
 }
 
 type sysfsAttribute struct {
@@ -158,7 +140,7 @@ func (attr *sysfsAttribute) close() error {
 }
 
 func (attr *sysfsAttribute) read() (string, error) {
-	_, err := attr.file.Seek(0, os.SEEK_SET)
+	_, err := attr.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return "", err
 	}
@@ -172,7 +154,7 @@ func (attr *sysfsAttribute) read() (string, error) {
 }
 
 func (attr *sysfsAttribute) write(value string) error {
-	_, err := attr.file.Seek(0, os.SEEK_SET)
+	_, err := attr.file.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
@@ -188,19 +170,21 @@ func (attr *sysfsAttribute) write(value string) error {
 }
 
 type ksm struct {
-	root          string
 	run           sysfsAttribute
 	pagesToScan   sysfsAttribute
 	sleepInterval sysfsAttribute
-	initialized   bool
 
+	root                 string
 	initialPagesToScan   string
 	initialSleepInterval string
 	initialKSMRun        string
 
 	currentKnob ksmMode
-	throttling  bool
+
 	kickChannel chan bool
+
+	throttling  bool
+	initialized bool
 
 	sync.Mutex
 }
@@ -230,11 +214,7 @@ func (k *ksm) restoreSysFS() error {
 		return err
 	}
 
-	if err = k.run.write(k.initialKSMRun); err != nil {
-		return err
-	}
-
-	return nil
+	return k.run.write(k.initialKSMRun)
 }
 
 func (k *ksm) restore() error {
@@ -366,11 +346,7 @@ func (k *ksm) tune(s ksmSetting) error {
 		return err
 	}
 
-	if err = k.run.write(ksmStart); err != nil {
-		return err
-	}
-
-	return nil
+	return k.run.write(ksmStart)
 }
 
 // kick gets us back to the aggressive setting
