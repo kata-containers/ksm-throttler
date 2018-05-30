@@ -107,7 +107,7 @@ func SetLoggingLevel(l string) error {
 		return err
 	}
 
-	logrus.SetLevel(level)
+	throttlerLog.Logger.SetLevel(level)
 
 	throttlerLog.Logger.Formatter = &logrus.TextFormatter{TimestampFormat: time.RFC3339Nano}
 
