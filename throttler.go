@@ -89,7 +89,7 @@ var ksmThrottleIntervals = map[ksmMode]ksmThrottleInterval{
 	},
 }
 
-// throttlerLog is the general logger the KSM throttler.
+// throttlerLog is the general logger for the KSM throttler.
 var throttlerLog = logrus.WithFields(logrus.Fields{
 	"source": "throttler",
 	"name":   name,
