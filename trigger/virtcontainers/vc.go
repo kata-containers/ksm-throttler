@@ -9,13 +9,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/fsnotify/fsnotify"
-	"github.com/kata-containers/ksm-throttler/pkg/client"
-	"github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"path/filepath"
 	"sync"
+	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/kata-containers/ksm-throttler/pkg/client"
+	"github.com/sirupsen/logrus"
 )
 
 // DefaultURI is populated at link time with the value of:
@@ -24,6 +26,12 @@ var DefaultURI string
 
 // ArgURI is populated at runtime from the option -uri
 var ArgURI = flag.String("uri", "", "KSM throttler gRPC URI")
+
+var triggerLog = logrus.WithFields(logrus.Fields{
+	"source": "throttler-trigger",
+	"name":   "vc",
+	"pid":    os.Getpid(),
+})
 
 const (
 	defaultgRPCSocket = "/var/run/ksm-throttler/ksm.sock"
@@ -66,20 +74,22 @@ func waitForDirectory(dir string) error {
 
 	syncCh := make(chan error)
 
+	logger := triggerLog.WithField("directory", dir)
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		logrus.Errorf("could not create new watcher %v", err)
+		logger.WithError(err).Error("could not create new watcher")
 		return err
 	}
 	defer watcher.Close()
 
-	logrus.Debugf("Waiting for %s", dir)
+	logger.Debug("Waiting for directory")
 
 	go func() {
 		for {
 			select {
 			case event := <-watcher.Events:
-				logrus.Debugf("Directory monitoring event %v", event)
+				logger.WithField("event", event).Debug("Got event")
 				if event.Op&fsnotify.Create != fsnotify.Create ||
 					event.Name != dir {
 					continue
@@ -89,7 +99,7 @@ func waitForDirectory(dir string) error {
 				return
 
 			case err := <-watcher.Errors:
-				logrus.Errorf("Directory monitoring error %v", err)
+				logger.WithError(err).Error("Directory monitoring failed")
 				syncCh <- err
 				return
 			}
@@ -97,14 +107,14 @@ func waitForDirectory(dir string) error {
 	}()
 
 	if err := watcher.Add(filepath.Dir(dir)); err != nil {
-		logrus.Errorf("Could not monitor directory %s: %v", dir, err)
+		logger.WithError(err).Error("Could not monitor directory")
 		return err
 	}
 
 	select {
 	case syncErr := <-syncCh:
 		if syncErr == nil {
-			logrus.Debugf("%s created", dir)
+			logger.Debug("directory created")
 		}
 		return err
 	}
@@ -115,54 +125,63 @@ func monitorPods(vcRunRoot, throttler string) error {
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		logrus.Errorf("could not create new watcher %v", err)
+		triggerLog.WithError(err).Error("could not create new watcher")
 		return err
 	}
 	defer watcher.Close()
 
+	logger := triggerLog.WithFields(logrus.Fields{
+		"vc-root":   vcRunRoot,
+		"throttler": throttler,
+	})
+
 	// Wait for vc root if it does not exist
 	if _, err := os.Stat(vcRunRoot); os.IsNotExist(err) {
 		if err := waitForDirectory(vcRunRoot); err != nil {
-			logrus.Errorf("Could not monitor virtcontainers base directory %s: %v", vcRunRoot, err)
+			logger.WithError(err).Error("Could not monitor virtcontainers base directory")
 			return err
 		}
 	}
 
 	// Wait for the pods path if it does not exist
-	podsPath := filepath.Join(vcRunRoot, "pods")
+	podsPath := filepath.Join(vcRunRoot, "sbs")
+
+	logger = logger.WithField("pods-path", podsPath)
+
 	if _, err := os.Stat(podsPath); os.IsNotExist(err) {
 		if err := waitForDirectory(podsPath); err != nil {
-			logrus.Errorf("Could not monitor virtcontainers pods %s: %v", podsPath, err)
+			logger.WithError(err).Error("Could not monitor virtcontainers pods")
 			return err
 		}
 
 		// First pod created, we should kick the throttler
 		if err := client.Kick(throttler); err != nil {
-			logrus.Errorf("Could not kick the throttler %v", err)
+			logger.WithError(err).Error("Could not kick the throttler")
 			return err
 		}
 	}
 
 	wg.Add(1)
 
-	logrus.Debugf("Monitoring virtcontainers events at %s", podsPath)
+	logger.Debug("Monitoring virtcontainers events")
+
 	go func() {
 		for {
 			select {
 			case event := <-watcher.Events:
-				logrus.Debugf("Virtcontainers monitoring event %v", event)
+				logger.WithField("event", event).Debug("Virtcontainers monitoring event")
 				if event.Op&fsnotify.Create != fsnotify.Create {
 					continue
 				}
 
-				logrus.Debugf("Kicking KSM throttler at %s", throttler)
+				logger.Debug("Kicking KSM throttler")
 				if err := client.Kick(throttler); err != nil {
-					logrus.Errorf("Could not kick the throttler %v", err)
+					logger.WithError(err).Error("Could not kick the throttler")
 					continue
 				}
 
 			case err := <-watcher.Errors:
-				logrus.Errorf("Virtcontainers monitoring error %v", err)
+				logger.WithError(err).Error("Virtcontainers monitoring error")
 				wg.Done()
 				return
 			}
@@ -170,7 +189,7 @@ func monitorPods(vcRunRoot, throttler string) error {
 	}()
 
 	if err := watcher.Add(podsPath); err != nil {
-		logrus.Errorf("Could not monitor virtcontainers root %s: %v", vcRunRoot, err)
+		logger.WithError(err).Error("Could not monitor virtcontainers root")
 		return err
 	}
 
@@ -187,7 +206,10 @@ func setLoggingLevel(l string) error {
 		return err
 	}
 
-	logrus.SetLevel(level)
+	triggerLog.Logger.SetLevel(level)
+
+	triggerLog.Logger.Formatter = &logrus.TextFormatter{TimestampFormat: time.RFC3339Nano}
+
 	return nil
 }
 
