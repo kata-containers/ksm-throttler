@@ -226,11 +226,12 @@ func main() {
 
 	uri, err := getSocketPath()
 	if err != nil {
-		logrus.Errorf("Could net get service socket URI %v", err)
-		return
+		logrus.WithError(err).Error("Could net get service socket URI")
+		os.Exit(1)
 	}
 
 	if err := monitorPods(*vcRoot, uri); err != nil {
-		logrus.Errorf("Could not monitor pods %v", err)
+		logrus.WithError(err).Error("Could not monitor pods")
+		os.Exit(1)
 	}
 }
