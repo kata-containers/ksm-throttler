@@ -220,7 +220,8 @@ func main() {
 	flag.Parse()
 
 	if err := setLoggingLevel(*logLevel); err != nil {
-		fmt.Printf("Could not set logging level %s: %v", *logLevel, err)
+		fmt.Fprintf(os.Stderr, "Could not set logging level %s: %v", *logLevel, err)
+		os.Exit(1)
 	}
 
 	uri, err := getSocketPath()
