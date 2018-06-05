@@ -17,6 +17,7 @@ import (
 
 	gpb "github.com/golang/protobuf/ptypes/empty"
 	kpb "github.com/kata-containers/ksm-throttler/pkg/grpc"
+	ksig "github.com/kata-containers/ksm-throttler/pkg/signals"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -32,6 +33,8 @@ var memInfo = "/proc/meminfo"
 
 // version is the KSM throttler version. This variable is populated at build time.
 var version = "unknown"
+
+var debug = false
 
 // DefaultURI is populated at link time with the value of:
 //   ${locatestatedir}/run/ksm-throttler/ksm.sock
@@ -109,6 +112,11 @@ func SetLoggingLevel(l string) error {
 
 	throttlerLog.Logger.SetLevel(level)
 
+	if levelStr == "debug" {
+		debug = true
+		ksig.CrashOnError = true
+	}
+
 	throttlerLog.Logger.Formatter = &logrus.TextFormatter{TimestampFormat: time.RFC3339Nano}
 
 	throttlerLog.WithField("version", version).Info()
@@ -184,7 +192,7 @@ func getSocketPath() (string, error) {
 	return socketURI, nil
 }
 
-func main() {
+func realMain() {
 	doVersion := flag.Bool("version", false, "display the version")
 	logLevel := flag.String("log", "warn",
 		"log messages above specified level; one of debug, warn, error, fatal or panic")
@@ -200,6 +208,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Could not set logging level %s: %v", *logLevel, err)
 		os.Exit(1)
 	}
+
+	ksig.SetLogger(throttlerLog)
 
 	uri, err := getSocketPath()
 	if err != nil {
@@ -233,4 +243,9 @@ func main() {
 		throttlerLog.WithError(err).Error("gRPC serve error")
 		os.Exit(1)
 	}
+}
+
+func main() {
+	defer ksig.HandlePanic()
+	realMain()
 }

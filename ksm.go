@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	ksig "github.com/kata-containers/ksm-throttler/pkg/signals"
 	"github.com/sirupsen/logrus"
 )
 
@@ -381,10 +382,37 @@ func startKSM(root string, mode ksmMode) (*ksm, error) {
 		c := make(chan os.Signal, 2)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
+		for _, sig := range ksig.HandledSignals() {
+			signal.Notify(c, sig)
+		}
+
 		go func() {
-			<-c
-			_ = k.restore()
-			os.Exit(0)
+			for {
+				// Block waiting for a signal
+				sig := <-c
+
+				if sig == syscall.SIGTERM {
+					_ = k.restore()
+					os.Exit(0)
+				}
+
+				nativeSignal, ok := sig.(syscall.Signal)
+				if !ok {
+					err := errors.New("unknown signal")
+					throttlerLog.WithError(err).WithField("signal", sig.String()).Error()
+					continue
+				}
+
+				if ksig.FatalSignal(nativeSignal) {
+					throttlerLog.WithField("signal", sig).Error("received fatal signal")
+					ksig.Die()
+				} else if ksig.NonFatalSignal(nativeSignal) {
+					if debug {
+						throttlerLog.WithField("signal", sig).Debug("handling signal")
+						ksig.Backtrace()
+					}
+				}
+			}
 		}()
 
 		if mode == ksmAuto {

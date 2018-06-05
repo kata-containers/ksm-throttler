@@ -7,16 +7,20 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/kata-containers/ksm-throttler/pkg/client"
+	ksig "github.com/kata-containers/ksm-throttler/pkg/signals"
 	"github.com/sirupsen/logrus"
 )
 
@@ -213,6 +217,39 @@ func setLoggingLevel(l string) error {
 	return nil
 }
 
+func setupSignalHandler() {
+	sigCh := make(chan os.Signal, 8)
+
+	for _, sig := range ksig.HandledSignals() {
+		signal.Notify(sigCh, sig)
+	}
+
+	var debug = true
+
+	go func() {
+		for {
+			sig := <-sigCh
+
+			nativeSignal, ok := sig.(syscall.Signal)
+			if !ok {
+				err := errors.New("unknown signal")
+				triggerLog.WithError(err).WithField("signal", sig.String()).Error()
+				continue
+			}
+
+			if ksig.FatalSignal(nativeSignal) {
+				triggerLog.WithField("signal", sig).Error("received fatal signal")
+				ksig.Die()
+			} else if ksig.NonFatalSignal(nativeSignal) {
+				if debug {
+					triggerLog.WithField("signal", sig).Debug("handling signal")
+					ksig.Backtrace()
+				}
+			}
+		}
+	}()
+}
+
 func main() {
 	vcRoot := flag.String("root", "/var/run/virtcontainers", "Virtcontainers root directory")
 	logLevel := flag.String("log", "warn",
@@ -224,11 +261,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	ksig.SetLogger(triggerLog)
+
 	uri, err := getSocketPath()
 	if err != nil {
 		logrus.WithError(err).Error("Could net get service socket URI")
 		os.Exit(1)
 	}
+
+	setupSignalHandler()
 
 	if err := monitorPods(*vcRoot, uri); err != nil {
 		logrus.WithError(err).Error("Could not monitor pods")
