@@ -224,7 +224,7 @@ func (k *ksm) restore() error {
 	defer k.Unlock()
 
 	if !k.initialized {
-		return errors.New("KSM is unavailable")
+		return errKSMUnavailable
 	}
 
 	if err = k.restoreSysFS(); err != nil {
@@ -252,7 +252,7 @@ func (k *ksm) throttle() {
 	defer k.Unlock()
 
 	if !k.initialized {
-		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
+		throttlerLog.WithError(errKSMUnavailable).Error()
 		return
 	}
 
@@ -354,7 +354,7 @@ func (k *ksm) kick() {
 	k.Lock()
 
 	if !k.initialized {
-		throttlerLog.WithError(errors.New("KSM is unavailable")).Error()
+		throttlerLog.WithError(errKSMUnavailable).Error()
 		k.Unlock()
 		return
 	}
