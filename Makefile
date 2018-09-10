@@ -74,6 +74,8 @@ UNIT_FILES = $(TARGET).service kata-vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
 endif
 
+unit-files: $(UNIT_FILES)
+
 #
 # Tests
 #
@@ -114,6 +116,7 @@ clean:
 	rm -f $(TARGET)
 	rm -f $(TRIGGER_DIR)/kicker/kicker
 	rm -f $(TRIGGER_DIR)/virtcontainers/vc
+	rm -f $(UNIT_FILES)
 
 $(GENERATED_FILES): %: %.in Makefile
 	@mkdir -p `dirname $@`
@@ -136,4 +139,5 @@ $(GENERATED_FILES): %: %.in Makefile
 	check-go-test \
 	install \
 	uninstall \
+	unit-files \
 	clean
