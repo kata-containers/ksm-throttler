@@ -70,7 +70,7 @@ SERVICE_FILE := $(TARGET).service
 SERVICE_FILE_IN := $(SERVICE_FILE).in
 
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-UNIT_FILES = $(TARGET).service vc-throttler.service
+UNIT_FILES = $(TARGET).service kata-vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
 endif
 
