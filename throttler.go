@@ -36,8 +36,7 @@ var version = "unknown"
 
 var debug = false
 
-// DefaultURI is populated at link time with the value of:
-//   ${locatestatedir}/run/ksm-throttler/ksm.sock
+// DefaultURI is populated at link time - see the Makefile
 var DefaultURI string
 
 // ArgURI is populated at runtime from the option -uri
