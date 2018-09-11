@@ -36,8 +36,7 @@ var version = "unknown"
 
 var debug = false
 
-// DefaultURI is populated at link time with the value of:
-//   ${locatestatedir}/run/ksm-throttler/ksm.sock
+// DefaultURI is populated at link time - see the Makefile
 var DefaultURI string
 
 // ArgURI is populated at runtime from the option -uri
@@ -52,7 +51,7 @@ const (
 	ksmStart          = "1"
 	ksmStop           = "0"
 	defaultKSMMode    = ksmAuto
-	defaultgRPCSocket = "/var/run/ksm-throttler/ksm.sock"
+	defaultgRPCSocket = "/var/run/kata-ksm-throttler/ksm.sock"
 	// In linux the max socket path is 108 including null character
 	// see http://man7.org/linux/man-pages/man7/unix.7.html
 	socketPathMaxLength = 107

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-TARGET        = ksm-throttler
+TARGET        = kata-ksm-throttler
 PACKAGE_URL   = github.com/kata-containers/ksm-throttler
 PACKAGE_NAME  = $(TARGET)
 BASE          = $(GOPATH)/src/$(PACKAGE_URL)
@@ -48,11 +48,11 @@ $(TARGET):
 
 kicker:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/kicker/*.go
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/kicker/*.go)
 
 virtcontainers:
 	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
-		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(TRIGGER_DIR)/virtcontainers/*.go
+		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/virtcontainers/*.go)
 
 binaries: $(TARGET) kicker virtcontainers
 
@@ -69,13 +69,12 @@ DEFAULT_SERVICE_FILE_IN := $(DEFAULT_SERVICE_FILE).in
 SERVICE_FILE := $(TARGET).service
 SERVICE_FILE_IN := $(SERVICE_FILE).in
 
-$(SERVICE_FILE_IN): $(DEFAULT_SERVICE_FILE_IN)
-	$(QUIET_GEN)cp $< $@
-
 UNIT_DIR := $(shell pkg-config --variable=systemdsystemunitdir systemd)
-UNIT_FILES = $(TARGET).service vc-throttler.service
+UNIT_FILES = $(TARGET).service kata-vc-throttler.service
 GENERATED_FILES += $(UNIT_FILES)
 endif
+
+unit-files: $(UNIT_FILES)
 
 #
 # Tests
@@ -117,6 +116,7 @@ clean:
 	rm -f $(TARGET)
 	rm -f $(TRIGGER_DIR)/kicker/kicker
 	rm -f $(TRIGGER_DIR)/virtcontainers/vc
+	rm -f $(UNIT_FILES)
 
 $(GENERATED_FILES): %: %.in Makefile
 	@mkdir -p `dirname $@`
@@ -139,4 +139,5 @@ $(GENERATED_FILES): %: %.in Makefile
 	check-go-test \
 	install \
 	uninstall \
+	unit-files \
 	clean

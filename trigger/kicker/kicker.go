@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	uri := flag.String("uri", "/var/run/ksmthrottler.sock", "KSM throttler gRPC URI")
+	uri := flag.String("uri", "/var/run/kata-ksm-throttler/ksm.sock", "KSM throttler gRPC URI")
 	flag.Parse()
 
 	err := client.Kick(*uri)

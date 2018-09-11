@@ -121,7 +121,7 @@ on which resources they want to monitor.
 
 #### `virtcontainers` trigger
 
-This project implements a throttling triggers for
+This project implements a throttling trigger for
 [virtcontainers](https://github.com/containers/virtcontainers) based
 containers, see https://github.com/kata-containers/ksm-throttler/blob/master/trigger/virtcontainers.
 
@@ -146,7 +146,7 @@ import (
 )
 
 func main() {
-	uri := flag.String("uri", "/var/run/ksmthrottler.sock", "KSM throttler gRPC URI")
+	uri := flag.String("uri", "/var/run/kata-ksm-throttler/ksm.sock", "KSM throttler gRPC URI")
 	flag.Parse()
 
 	err := client.Kick(*uri)

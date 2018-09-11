@@ -251,7 +251,7 @@ func setupSignalHandler() {
 }
 
 func main() {
-	vcRoot := flag.String("root", "/var/run/virtcontainers", "Virtcontainers root directory")
+	vcRoot := flag.String("root", "/run/vc", "Virtcontainers root directory")
 	logLevel := flag.String("log", "warn",
 		"log messages above specified level; one of debug, warn, error, fatal or panic")
 	flag.Parse()
