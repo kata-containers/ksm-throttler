@@ -16,6 +16,8 @@ KSM_SOCKET    = $(LOCALSTATEDIR)/run/$(TARGET)/ksm.sock
 TRIGGER_DIR   = $(GOPATH)/src/$(PACKAGE_URL)/trigger
 GO            = go
 PKGS          = $(or $(PKG),$(shell cd $(BASE) && env GOPATH=$(GOPATH) $(GO) list ./... | grep -v "/vendor/"))
+TARGET_KICKER = $(TRIGGER_DIR)/kicker/kicker
+TARGET_VC     = $(TRIGGER_DIR)/virtcontainers/vc
 
 VERSION_FILE := ./VERSION
 VERSION := $(shell grep -v ^\# $(VERSION_FILE))
@@ -46,13 +48,17 @@ $(TARGET):
 	$(QUIET_GOBUILD)go build -o $@ -ldflags \
 		"-X main.DefaultURI=$(KSM_SOCKET) -X main.name=$(TARGET) -X main.version=$(VERSION_COMMIT)" throttler.go ksm.go
 
-kicker:
-	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/kicker/$@ \
+$(TARGET_KICKER):
+	$(QUIET_GOBUILD)go build -o $@  \
 		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/kicker/*.go)
 
-virtcontainers:
-	$(QUIET_GOBUILD)go build -o $(TRIGGER_DIR)/virtcontainers/vc \
+$(TARGET_VC):
+	$(QUIET_GOBUILD)go build -o $@ \
 		-ldflags "-X main.DefaultURI=$(KSM_SOCKET)" $(wildcard $(TRIGGER_DIR)/virtcontainers/*.go)
+
+kicker: $(TARGET_KICKER)
+
+virtcontainers: $(TARGET_VC)
 
 binaries: $(TARGET) kicker virtcontainers
 
@@ -114,8 +120,8 @@ install: all-installable
 
 clean:
 	rm -f $(TARGET)
-	rm -f $(TRIGGER_DIR)/kicker/kicker
-	rm -f $(TRIGGER_DIR)/virtcontainers/vc
+	rm -f $(TARGET_KICKER)
+	rm -f $(TARGET_VC)
 	rm -f $(UNIT_FILES)
 
 $(GENERATED_FILES): %: %.in Makefile
@@ -132,6 +138,7 @@ $(GENERATED_FILES): %: %.in Makefile
 
 .PHONY: \
 	all \
+	all-installable \
 	build \
 	binaries \
 	check \
