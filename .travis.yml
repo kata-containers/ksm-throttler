@@ -1,8 +1,14 @@
+#
+# Copyright (c) 2019 Intel Corporation
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+---
 language: go
 sudo: required
 go:
-- 1.8
-- 1.9
+- 1.11.x
 - tip
 go_import_path: github.com/kata-containers/ksm-throttler
 
