@@ -115,13 +115,11 @@ func waitForDirectory(dir string) error {
 		return err
 	}
 
-	select {
-	case syncErr := <-syncCh:
-		if syncErr == nil {
-			logger.Debug("directory created")
-		}
-		return err
+	syncErr := <-syncCh
+	if syncErr == nil {
+		logger.Debug("directory created")
 	}
+	return err
 }
 
 func monitorPods(vcRunRoot, throttler string) error {
