@@ -10,6 +10,15 @@ sudo: required
 go:
 - 1.11.x
 - tip
+- stable
+
+# go version should pass with:
+# https://github.com/kata-containers/runtime/blob/master/versions.yaml
+matrix:
+  allow_failures:
+    - go: tip
+    - go: stable
+
 go_import_path: github.com/kata-containers/ksm-throttler
 
 before_script:
