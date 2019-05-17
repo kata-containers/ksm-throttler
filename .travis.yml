@@ -12,7 +12,11 @@ go:
 - tip
 - stable
 
-# go version should pass with:
+os:
+- linux
+- linux-ppc64le
+
+  # go version should pass with:
 # https://github.com/kata-containers/runtime/blob/master/versions.yaml
 matrix:
   allow_failures:
