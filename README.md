@@ -5,6 +5,19 @@
 
 # KSM throttling daemon
 
+* [Introduction](#introduction)
+* [What is KSM?](#what-is-ksm)
+* [Overall architecture](#overall-architecture)
+    * [Daemon](#daemon)
+        * [Throttling algorithm](#throttling-algorithm)
+    * [Throttling triggers](#throttling-triggers)
+        * [`virtcontainers` trigger](#virtcontainers-trigger)
+    * [gRPC](#grpc)
+* [Build and install](#build-and-install)
+* [Run](#run)
+
+## Introduction
+
 This project implements a
 [Kernel Same-page Merging](https://www.kernel.org/doc/Documentation/vm/ksm.txt)
 throttling daemon.
