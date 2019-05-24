@@ -9,7 +9,7 @@ This project implements a
 [Kernel Same-page Merging](https://www.kernel.org/doc/Documentation/vm/ksm.txt)
 throttling daemon.
 
-Its goal is to regulate KSM by dynamically modifying the KSM sysfs
+Its goal is to regulate KSM by dynamically modifying the KSM `sysfs`
 entries, in order to minimize memory duplication as fast as possible
 while keeping the KSM daemon load low.
 
@@ -25,7 +25,7 @@ A daemon (`ksmd`) periodically scans userspace memory, looking for
 identical pages that can be replaced by a single, write-protected
 page. When a process tries to modify this shared page content, it
 gets a private copy into its memory space. KSM only scans and merges
-pages that are both anonymous and that have been explictly tagged as
+pages that are both anonymous and that have been explicitly tagged as
 mergeable by applications calling into the `madvise` system call
 (`int madvice(addr, length, MADV_MERGEABLE)`).
 
@@ -61,7 +61,7 @@ other hand.
 By default, `ksm-throttler` will throttle KSM up and down. Regardless
 of the current KSM system settings, `ksm-throttler` will move them to
 the `aggressive` settings as soon as it gets triggered.
-With the `aggressive` setting, ksmd will run every millisecond and
+With the `aggressive` setting, `ksmd` will run every millisecond and
 will scan 10% of all available anonymous pages during each scanning
 cycle.
 
