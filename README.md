@@ -182,7 +182,7 @@ $ sudo make install
 To run `ksm-throttler` with virtcontainers as the throttling trigger:
 
 ```
-$ systemctl start vc-throttler
+$ systemctl start kata-vc-throttler
 ```
 
 This will start both the `ksm-throttler` daemon and the `vc` throttling
