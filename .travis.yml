@@ -26,9 +26,6 @@ install:
   - go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
   - go get -t -v $go_packages
 
-install:
-  - cd ${TRAVIS_BUILD_DIR} && make
-
 script:
   - go env
   - cd ${TRAVIS_BUILD_DIR} && make && make check
