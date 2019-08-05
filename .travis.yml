@@ -16,7 +16,7 @@ os:
 - linux
 - linux-ppc64le
 
-  # go version should pass with:
+# go version should pass with:
 # https://github.com/kata-containers/runtime/blob/master/versions.yaml
 matrix:
   allow_failures:
@@ -29,9 +29,9 @@ before_script:
   - ".ci/static-checks.sh"
 
 install:
-- go_packages=$(go list ./... | grep -v vendor)
-- go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
-- go get -t -v $go_packages
+  - go_packages=$(go list ./... | grep -v vendor)
+  - go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
+  - go get -t -v $go_packages
 
 install:
   - cd ${TRAVIS_BUILD_DIR} && make
@@ -41,5 +41,5 @@ script:
   - cd ${TRAVIS_BUILD_DIR} && make && make check
 
 after_success:
-- "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
-- bash <(curl -s https://codecov.io/bash)
+  - "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
+  - bash <(curl -s https://codecov.io/bash)
