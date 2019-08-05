@@ -21,3 +21,8 @@
 [[constraint]]
   name = "github.com/fsnotify/fsnotify"
   revision = "4da3e2cfbabc9f751898f250b49f2439785783a1"
+
+[prune]
+  non-go = true
+  go-tests = true
+  unused-packages = true
