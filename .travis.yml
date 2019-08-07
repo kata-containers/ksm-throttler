@@ -7,39 +7,29 @@
 ---
 language: go
 sudo: required
-go:
-- 1.11.x
-- tip
-- stable
 
 os:
 - linux
 - linux-ppc64le
 
-  # go version should pass with:
-# https://github.com/kata-containers/runtime/blob/master/versions.yaml
-matrix:
-  allow_failures:
-    - go: tip
-    - go: stable
-
 go_import_path: github.com/kata-containers/ksm-throttler
 
 before_script:
+  - ".ci/setup.sh"
+  # go version should pass with:
+  # https://github.com/kata-containers/runtime/blob/master/versions.yaml
+  - ".ci/install_go.sh"
   - ".ci/static-checks.sh"
 
 install:
-- go_packages=$(go list ./... | grep -v vendor)
-- go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
-- go get -t -v $go_packages
-
-install:
-  - cd ${TRAVIS_BUILD_DIR} && make
+  - go_packages=$(go list ./... | grep -v vendor)
+  - go_files=`go list -f '{{.Dir}}/*.go' $go_packages`
+  - go get -t -v $go_packages
 
 script:
   - go env
   - cd ${TRAVIS_BUILD_DIR} && make && make check
 
 after_success:
-- "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
-- bash <(curl -s https://codecov.io/bash)
+  - "$GOPATH/bin/goveralls -service=travis-ci -coverprofile=/tmp/cover.out"
+  - bash <(curl -s https://codecov.io/bash)
