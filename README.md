@@ -5,6 +5,7 @@
 
 # KSM throttling daemon
 
+
 * [Introduction](#introduction)
 * [What is KSM?](#what-is-ksm)
 * [Overall architecture](#overall-architecture)
